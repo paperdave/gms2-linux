@@ -5,7 +5,7 @@ const CONTROL_INSERT_START_ID = "←"; // uh
 const CONTROL_INSERT_END_ID = "|";
 
 /**
- * Attemps to inherit a .yy json file with a parent and child file
+ * Attempts to inherit a .yy json file with a parent and child file
  */
 export async function inheritYYFile(childPath: PathLike, parentPath: PathLike, outputPath: PathLike) {
     type IChangeList = Array<{ id: string, changes: { [key: string]: any } }>;

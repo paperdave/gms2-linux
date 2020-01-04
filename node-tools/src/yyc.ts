@@ -7,9 +7,8 @@ import * as cli from "cli";
 import { default as chalk } from "chalk";
 import { readFileSync, existsSync, statSync, readdirSync, PathLike } from "fs";
 import { join, resolve } from "path";
-import * as rubber from './rubber';
-import { getUserDir } from "./utils/preferences_grab";
-cli.setUsage("rubber [options] path/to/project.yyp [output file]");
+import { compile, clearCache, clearCacheRemote } from './compiler';
+cli.setUsage("yyc [options] path/to/project.yyp [output file]");
 
 /**
  * Preform basic checks to see if a .yyp is actually valid.
@@ -38,22 +37,23 @@ const options = cli.parse({
     clear: ["", "Clears cache for project and exits."],
     "clear_remote": ["","Clears the remote client cache."],
     "gms-dir":["","Alternative GMS installation directory","path"],
-    "export-platform":["p","Export platform","string"],
+    "platform":["p","Export platform","string"],
     "device-config-dir":["","Target device config file directory", "path"],
     "target-device-name":["","Target device name","string"],
     "runtime":["","The runtime to use","string"],
-    "ea":["","Toggle whether to use Early Access version"]
+    "ea":["","Toggle whether to use Early Access version"],
+    "linux":["l","Equal to --platform linux"],
 });
 // CLI calls the callback with the arguments and options.
 cli.main(async (args, options) => {
     if (options.version) {
         // Output version and if build tools are all set.
         const packagejson = JSON.parse(readFileSync(join(__dirname, "../package.json")).toString());
-        console.log(`Rubber ` + chalk.green(`v${packagejson.version}`));
+        console.log(`YoYoProject Compiler ` + chalk.green(`v${packagejson.version}`));
         return;
     }
     if (args.length == 0) {
-        cli.fatal("Missing project path. Exiting");
+        args[0] = '.';
     }
     let path = resolve(args[0]);
     // !!! #4 Removed the yyz check from an older verison. This can
@@ -92,7 +92,7 @@ cli.main(async (args, options) => {
     if (options.installer) {
         buildType = "installer";
     }
-    
+
     // Alternative GMS install dir
     let gamemakerLocation: string = "";
     if (options["gms-dir"]){
@@ -108,11 +108,11 @@ cli.main(async (args, options) => {
     let targetDeviceName: string = "";
     if (options["target-device-name"]){
         targetDeviceName = options["target-device-name"];
-    }   
+    }
 
-    let platform: "windows" | "mac" | "linux" | "ios" | "android" | "ps4" | "xboxone" | "switch" | "html5" | "uwp" = "windows";
-    if (options["export-platform"]){
-        platform = options["export-platform"];
+    let platform: "windows" | "mac" | "linux" | "ios" | "android" | "ps4" | "xboxone" | "switch" | "html5" | "uwp" = options.linux ? 'linux' : "windows";
+    if (options.platform){
+        platform = options.platform;
     }
 
     let theRuntime: string = "";
@@ -138,45 +138,11 @@ cli.main(async (args, options) => {
 
     // Clear build machine's cache
     if(options.clear) {
-        rubber.clearCache(path).then(() => {
+        clearCache(path).then(() => {
             cli.info("Cleared Project Cache.");
         });
         return;
     }
 
-    // Use the api to compile the project or clear the remote client cache.
-    const build = options["clear_remote"] ? rubber.clearCacheRemote(rubberOptions) : rubber.compile(rubberOptions,false);
-
-    build.on("compileStatus", (data:string) => {
-        // Errors will be marked in red
-        if(data.toLowerCase().startsWith("error")) {
-            data = chalk.redBright(data);
-        }
-        process.stdout.write(data);
-    });
-    build.on("gameStatus", (data: string) => {
-        process.stdout.write(data);
-    });
-    build.on("gameStarted", () => {
-        // space out the compile log and the game log a bit.
-        console.log("\n");
-    });
-    let igorErrors = false;
-    build.on("compileFinished", (errors: string[]) => {
-        if(errors.length > 0) {
-            igorErrors = true;
-            console.log(chalk.redBright("Compile Errors:"));
-            errors.forEach(err => {
-                console.log("  " + chalk.redBright(err));
-            });
-        }
-    });
-    build.on("allFinished", () => {
-        if(!igorErrors)
-            console.log(chalk.green("Compile Finished"));
-    });
-    build.on("error", (error: any) => {
-        if (!igorErrors)
-            cli.fatal(error.message);
-    });
+    options["clear_remote"] ? clearCacheRemote(rubberOptions) : compile(rubberOptions,false);
 });

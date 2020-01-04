@@ -1,0 +1,137 @@
+#!/bin/bash
+if [ "$EUID" -ne 0 ]; then
+  printf "$0: \e[91mMust be run as root.\e[0m\n\ntry '\e[1;35msudo $0\e[0m'\n\n"
+  exit
+fi
+
+INSTALLER_URL=https://www.yoyogames.com/download/studio/2
+
+display=":$(ls /tmp/.X11-unix/* | sed 's#/tmp/.X11-unix/X##' | head -n 1)"
+user=$(who | grep '('$display')' | awk '{print $1}' | head -n 1)
+uid=$(id -u $user)
+
+PREFIX=/home/$user/.gamemaker
+
+log() {
+  printf '\e[1;35m%s\e[0;35m %s\e[0m\n' "$1" "$2"
+  printf '\e[1;35m%s\e[0;35m %s\e[0m\n' "$1" "$2" | nc -Uw0 /tmp/setupstudiosocket
+}
+
+asuser() {
+  sudo -u $user DISPLAY=$display DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$uid/bus $@
+}
+
+printf 'This is setupstudio2.sh, a script to automate the setup of GameMaker Studio 2 on\ndebian machines.\n\n'
+printf 'Installing GameMakerStudio2 through this fasion doesn'"'"'t have an easy undo\noption, so be careful.\n\n'
+
+read -p "Press [Enter] to continue with installation, Ctrl+C to cancel it."
+
+asuser setsid -f x-terminal-emulator -e 'nc -lkU /tmp/setupstudiosocket' &
+
+sleep 0.5;
+
+printf 'Hello, this terminal window is from setupstudio2.sh, and will tell you what you\nneed to do at any point in the process. For more detailed logs and exact progress look at the original terminal.\n\n' | nc -Uw0 /tmp/setupstudiosocket
+
+log '[1]' 'Install all dependencies.'
+printf '\nThis stage requires no user input, just chill while stuff is installed.\n\n' | nc -Uw0 /tmp/setupstudiosocket
+log '[1.1]' 'Add Wine Key.'
+wget -nc https://dl.winehq.org/wine-builds/winehq.key && apt-key add winehq.key
+rm winehq.key
+log '[1.2]' 'Add Wine Repository.'
+apt-add-repository -nyr https://dl.winehq.org/wine-builds/ubuntu/
+apt-add-repository -ny https://dl.winehq.org/wine-builds/ubuntu/
+add-apt-repository -nyr ppa:cybermax-dexter/sdl2-backport
+add-apt-repository -ny ppa:cybermax-dexter/sdl2-backport
+log '[1.3]' 'Update Package Listing.'
+apt-get update
+log '[1.4]' 'Install Wine'
+apt-get install -y --install-recommends winehq-devel
+log '[1.5]' 'Install Linux Build Dependencies'
+apt-get install -y libssl1.1 libbz2​ build-essential clang libssl-dev libxrandr-dev libxxf86vm-dev libopenal-dev libgl1-mesa-dev libglu1-mesa-dev zlib1g-dev libcurl4-openssl-dev
+log '[1.6]' 'Install Node.JS'
+if [ -z "`which node`" ]; then
+  curl -sL https://deb.nodesource.com/setup_12.x | bash -
+  apt-get install -y nodejs
+fi
+log '[1.7]' 'Install Other Things This Script Uses'
+apt install -y procps
+cp /usr/lib/x86_64-linux-gnu/libssl.so.1.1 /usr/lib/x86_64-linux-gnu/libssl.so.1.0.0
+cp /usr/lib/x86_64-linux-gnu/libssl.so.1.1 /usr/lib/libssl.so.1.0.0
+cp /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1 /usr/lib/x86_64-linux-gnu/libcrypto.so.1.0.0
+cp /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1 /usr/lib/libcrypto.so.1.0.0​
+log '[1.8]' 'Install Winetricks'
+wget https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks
+chmod +x ./winetricks
+mv ./winetricks /usr/bin/winetricks
+
+log '[2]' 'Setting up the wine prefix for GameMaker'
+log '[2.1]' 'Creating the prefix'
+printf '\nA wine window should open now. You also can configure anything you want to in \nthe window, but the defaults should be fine. Press OK when done.\n\n' | nc -Uw0 /tmp/setupstudiosocket
+asuser WINEPREFIX=$PREFIX WINEARCH="win64" winecfg
+
+log '[2.2]' 'Uninstall Mono'
+printf '\nA wine window should open now. It should say it needs to install "wine-mono" and\n"gecko". Press "INSTALL" on both of these. After this, a window should pop up.\nClick on the "Wine Mono Runtime" and remove it. Press OK afterwards.\n\n' | nc -Uw0 /tmp/setupstudiosocket
+asuser WINEPREFIX=$PREFIX WINEARCH="win64" wine64 uninstaller
+
+log '[2.3]' 'Install .NET Framework 4.5.2'
+printf '\nJust click through the installer, and close it when you'"'"'re done.\nNotes about this installation:\n - Ignore warnings about a windows server update\n - Don'"'"'t restart your computer.\n - You will do it twice.\n\n' | nc -Uw0 /tmp/setupstudiosocket
+asuser WINEPREFIX=$PREFIX WINEARCH="win64" winetricks dotnet452
+
+log '[2.4]' 'Install Consolas Font'
+asuser WINEPREFIX=$PREFIX WINEARCH="win64" winetricks consolas &
+printf '\nLook at the FIRST TERMINAL window, and wait for the following text to appear:\n"Running /usr/bin/wineserver -w. This will hang until..."\nPress [Enter] in that window to force a killall, as winetricks may hang forever.\n\n' | nc -Uw0 /tmp/setupstudiosocket
+
+read -p 'Waiting for key press...'
+asuser WINEPREFIX=$PREFIX WINEARCH="win64" wineserver -k
+
+log '[3]' 'Install GameMaker Studio 2'
+log '[3.1]' 'Download GameMaker Studio 2 Installer'
+printf '\nDepending on your internet speed, this may take a while.\n\n' | nc -Uw0 /tmp/setupstudiosocket
+wget -O "$PREFIX/gms2_install.exe" "$INSTALLER_URL"
+log '[3.2]' 'Install GameMaker Studio 2'
+printf '\nThe GameMaker Studio 2 Installer should open now. Run through it as normal,\nexcept DO NOT create a desktop, start menu shortcut, or file associations.\n\nThe installer will try install the .NET Framework again, this installer will\nNEVER finish and hang FOREVER.\n\nOnce it opens press [Enter] in the FIRST TERMINAL to force kill it and continue the\nsetup.\n\n' | nc -Uw0 /tmp/setupstudiosocket
+asuser WINEPREFIX=$PREFIX WINEARCH="win64" setsid -f wine64 "$PREFIX/gms2_install.exe" &
+read -p 'Waiting for key press...'
+pkill gms2_install.exe -9
+pkill gms2_install.ex -9
+pkill Setup.exe -9
+asuser WINEPREFIX=$PREFIX WINEARCH="win64" wineserver -k
+rm $PREFIX/gms2_install.exe
+
+log '[3.3]' 'Create a .desktop shortcut'
+generateDesktop() {
+  printf '[Desktop Entry]\n'
+  printf 'Name=GameMaker Studio 2\n'
+  printf 'Exec=bash -c '"'"'WINEPREFIX="'"$PREFIX"'" WINEARCH="win64" wine64 "C:\Program Files\GameMaker Studio 2\GameMakerStudio.exe"'"'"'\n'
+  printf 'Type=Application\n'
+  printf 'StartupWMClass=gamemakerstudio.exe\n'
+}
+mkdir -p /home/$user/.local/share/applications
+generateDesktop > /home/$user/.local/share/applications/gamemakerstudio2.desktop
+chown $user /home/$user/.local/share/applications/gamemakerstudio2.desktop
+
+log '[3.4]' 'Create a Symbolic Link for GameMaker'"'"'s Config'
+ln -s "$PREFIX/drive_c/users/$user/Application Data/GameMakerStudio2" "$PREFIX/config"
+# also a bit of cleanup
+rm ~/.gamemaker/drive_c/users/dave/Temp/* -rf
+
+log '[4]' 'Set up the SSH Server'
+if service --status-all | grep -Fq 'ssh'; then
+  printf 'SSH Server is already setup. No extra work here.\n'
+  printf '\n    *an ssh server was detected, this step will be skipped\n' | nc -Uw0 /tmp/setupstudiosocket
+else
+  printf 'SSH Server is not setup.'
+  printf '\nTo be able to compile native linux builds, an SSH sever will be installed,\ntricking GameMaker into thinking it is compiling remotely.\n\nNOTICE: A security measure of this auto-installer is that the ssh server will\nonly be accessable from your computer, you can change this by\nediting /etc/ssh/sshd_config.\n' | nc -Uw0 /tmp/setupstudiosocket
+  log '[4.1]' 'Install OpenSSH'
+  apt install openssh-server
+  log '[4.2]' 'Disable Remote Connections'
+  cat /etc/ssh/sshd_config | sed -e 's/#ListenAddress ::/#ListenAddress ::\n# The following line was added by setupstudio2.sh\nListenAddress 127.0.0.1/' > /etc/ssh/sshd_config
+fi
+
+log '[5]' 'Install the linux variant of gamemaker-rubber'
+log '[5.1]' 'Install gamemaker-linux'
+npm install -g gamemaker-linux
+
+kill -n 9 `ps -aux | grep setupstudiosocket -m1 | awk '{ print $2 }'`
+printf '\n\n\nGood Job. You'"'"'re done!\n'
+printf 'GameMaker is installed\n - GameMaker should be in your program launcher\n - GameMaker can also be launched from the commandline with `gms2`\n - To compile projects, use the `yyc` commandline\n   tool (IDE compile doesn'"'"'t work)\n - You can also create new projects from the commandline with `yyc-new`\n\nThere is still one step to finish, see'

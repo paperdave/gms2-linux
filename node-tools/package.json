@@ -1,8 +1,7 @@
 {
-	"name": "gamemaker-rubber",
-	"version": "3.0.1",
-	"description": "GMS2 project compilation",
-	"main": "out/rubber.js",
+	"name": "gamemaker-linux",
+	"version": "1.0.0",
+	"description": "aid for ",
 	"scripts": {
 		"prepare": "node ./node_modules/typescript/bin/tsc -p ."
 	},
@@ -12,7 +11,8 @@
 	"dependencies": {
 		"chalk": "^2.4.1",
 		"cli": "^1.0.1",
-		"fs-extra": "^7.0.0"
+		"fs-extra": "^7.0.0",
+		"gamemaker-make-project": "^1.1.0"
 	},
 	"devDependencies": {
 		"@types/chalk": "^2.2.0",
@@ -23,20 +23,17 @@
 	},
 	"keywords": [
 		"gamemaker",
+		"linux",
 		"compiler"
 	],
 	"bin": {
-		"rubber": "./out/cli.js"
-	},
-	"author": "imdaveead",
-	"homepage": "https://github.com/GameMakerDiscord/Rubber#readme",
-	"bugs": {
-		"url": "https://github.com/GameMakerDiscord/Rubber/issues"
+		"yyc": "./out/yyc.js",
+		"yyc-new": "./out/yyc-new.js"
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/GameMakerDiscord/Rubber"
+		"url": "https://github.com/imdaveead/gamemaker-linux"
 	},
-	"readme": "README.md",
+	"author": "Dave Caruso",
 	"license": "MIT"
 }
