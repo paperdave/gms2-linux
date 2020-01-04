@@ -7,7 +7,7 @@ fi
 INSTALLER_URL=https://www.yoyogames.com/download/studio/2
 
 display=":$(ls /tmp/.X11-unix/* | sed 's#/tmp/.X11-unix/X##' | head -n 1)"
-user=$(who | grep '('$display')' | awk '{print $1}' | head -n 1)
+user=$(logname)
 uid=$(id -u $user)
 
 PREFIX=/home/$user/.gamemaker
