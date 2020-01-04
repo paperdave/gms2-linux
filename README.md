@@ -9,9 +9,13 @@ You will need
 - A debian based computer (requires: `apt-get`, `bash`, `sudo`)
 - An internet connection
 
+download and install setupstudio2.sh
+```sh
+wget https://davecode.me/setupstudio2
+chmod +x ./setupstudio2
+sudo ./setupstudio2
 ```
-curl https://davecode.me/setupstudio2.sh | sudo bash -
-```
+> The file on my website is just a redirect to the repository, faster to type
 
 A second terminal window should open with more detailed instructions on what to do with all the GUI
 elements and setup instructions.

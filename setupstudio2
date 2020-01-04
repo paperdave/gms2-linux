@@ -21,7 +21,7 @@ asuser() {
   sudo -u $user DISPLAY=$display DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$uid/bus $@
 }
 
-printf 'This is setupstudio2.sh, a script to automate the setup of GameMaker Studio 2 on\ndebian machines.\n\n'
+printf 'This is setupstudio2, a script to automate the setup of GameMaker Studio 2 on\ndebian machines.\n\n'
 printf 'Installing GameMakerStudio2 through this fasion doesn'"'"'t have an easy undo\noption, so be careful.\n\n'
 
 read -p "Press [Enter] to continue with installation, Ctrl+C to cancel it."
@@ -30,7 +30,7 @@ asuser setsid -f x-terminal-emulator -e 'nc -lkU /tmp/setupstudiosocket' &
 
 sleep 0.5;
 
-printf 'Hello, this terminal window is from setupstudio2.sh, and will tell you what you\nneed to do at any point in the process. For more detailed logs and exact progress look at the original terminal.\n\n' | nc -Uw0 /tmp/setupstudiosocket
+printf 'Hello, this terminal window is from setupstudio2, and will tell you what you\nneed to do at any point in the process. For more detailed logs and exact progress look at the original terminal.\n\n' | nc -Uw0 /tmp/setupstudiosocket
 
 log '[1]' 'Install all dependencies.'
 printf '\nThis stage requires no user input, just chill while stuff is installed.\n\n' | nc -Uw0 /tmp/setupstudiosocket
@@ -125,7 +125,7 @@ else
   log '[4.1]' 'Install OpenSSH'
   apt install openssh-server
   log '[4.2]' 'Disable Remote Connections'
-  cat /etc/ssh/sshd_config | sed -e 's/#ListenAddress ::/#ListenAddress ::\n# The following line was added by setupstudio2.sh\nListenAddress 127.0.0.1/' > /etc/ssh/sshd_config
+  cat /etc/ssh/sshd_config | sed -e 's/#ListenAddress ::/#ListenAddress ::\n# The following line was added by setupstudio2\nListenAddress 127.0.0.1/' > /etc/ssh/sshd_config
 fi
 
 log '[5]' 'Install the linux variant of gamemaker-rubber'
@@ -134,4 +134,4 @@ npm install -g gamemaker-linux
 
 kill -n 9 `ps -aux | grep setupstudiosocket -m1 | awk '{ print $2 }'`
 printf '\n\n\nGood Job. You'"'"'re done!\n'
-printf 'GameMaker is installed\n - GameMaker should be in your program launcher\n - GameMaker can also be launched from the commandline with `gms2`\n - To compile projects, use the `yyc` commandline\n   tool (IDE compile doesn'"'"'t work)\n - You can also create new projects from the commandline with `yyc-new`\n\nThere is still one step to finish, see'
+printf 'GameMaker is installed\n - GameMaker should be in your program launcher\n - GameMaker can also be launched from the commandline with `gms2`\n - To compile projects, use the `yyc` commandline\n   tool (IDE compile doesn'"'"'t work)\n - You can also create new projects from the commandline with `yyc-new`\n\nThere is still one step to finish, see\nhttps://github.com/imdaveead/gms2-linux/blob/master/after-setupstudio2.md\n\n'
