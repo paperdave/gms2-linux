@@ -112,7 +112,7 @@ chown $user /home/$user/.local/share/applications/gamemakerstudio2.desktop
 
 log '[3.4]' 'Create an commandline startup in /usr/bin'
 generateBin() {
-  printf '#!/bin/bash\nWINEPREFIX="'"$PREFIX"'" WINEARCH="win64" wine64 "C:\Program Files\GameMaker Studio 2\GameMakerStudio.exe"';
+  printf '#!/bin/bash\nif [ -n "$1" ];then\n  ARGS=Z:/`realpath $1`\nelse\n  ARGS=\nfi\nWINEPREFIX="'"$PREFIX"'" WINEARCH="win64" wine64 "C:\Program Files\GameMaker Studio 2\GameMakerStudio.exe"';
 }
 generateBin > /usr/bin/gms2
 
