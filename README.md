@@ -9,7 +9,7 @@ You will need
 - A debian based computer (requires: `apt-get`, `bash`, `sudo`)
 - An internet connection
 
-download and install setupstudio2.sh
+download and install setupstudio2
 ```sh
 wget https://davecode.me/setupstudio2
 chmod +x ./setupstudio2
