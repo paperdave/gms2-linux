@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { makeBlankProject } from "./make-project";
+import { default as chalk } from "chalk";
 import { basename, join, resolve } from "path";
+import { readFileSync } from "fs-extra";
 
 // Handles creating projects from the command line
 // this is the entry point.
@@ -8,10 +10,16 @@ const args = process.argv;
 
 let path = args[2];
 
+const packagejson = JSON.parse(readFileSync(join(__dirname, "../package.json")).toString());
+
 if(!path) {
-  console.log("Usage: yyc-new <path to target folder or yyp>");
-  console.log("yyc-new creates a new GameMaker Studio 2 Project.");
-    process.exit(1);
+  console.log(`${chalk.bold('yyc-new')}: GameMaker Project Generator. ${chalk.green(`Version ${packagejson.version}`)}`);
+  console.log(``);
+  console.log(`${chalk.bold('Usage:')}    ${chalk.magenta('yyc-new [project name]')}`);
+  console.log(``);
+  console.log(`${chalk.bold('Options:')}`);
+  console.log(`  (there are no options; it's that easy)`);
+  process.exit(1);
 }
 
 path = resolve(path);

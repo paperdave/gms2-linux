@@ -1,7 +1,7 @@
 {
 	"name": "gamemaker-linux",
-	"version": "1.0.0",
-	"description": "aid for ",
+	"version": "1.0.1",
+	"description": "tools to help make gamemaker easier to run on linux. installed with setupstudio2.",
 	"scripts": {
 		"prepare": "node ./node_modules/typescript/bin/tsc -p ."
 	},

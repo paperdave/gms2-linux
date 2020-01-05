@@ -7,8 +7,7 @@ import * as cli from "cli";
 import { default as chalk } from "chalk";
 import { readFileSync, existsSync, statSync, readdirSync, PathLike } from "fs";
 import { join, resolve } from "path";
-import { compile, clearCache, clearCacheRemote } from './compiler';
-cli.setUsage("yyc [options] path/to/project.yyp [output file]");
+import { compile, clearCache, clearCacheRemote, IRubberOptions } from './compiler';
 
 /**
  * Preform basic checks to see if a .yyp is actually valid.
@@ -20,38 +19,57 @@ function validateYYP(path: PathLike) {
     } catch (e) {
         projectRead = {};
     }
-    return ("IsDnDProject" in projectRead) &&
+    return typeof projectRead === 'object' &&
+        ("IsDnDProject" in projectRead) &&
         ("id" in projectRead) &&
         ("mvc" in projectRead) &&
         ("resources" in projectRead) &&
         (projectRead.modelName === "GMProject");
 }
 
+const packagejson = JSON.parse(readFileSync(join(__dirname, "../package.json")).toString());
+
+(cli as any).getUsage = () => {
+    console.log(`${chalk.bold('yyc')}: GameMaker Project Compiler for Linux. ${chalk.green(`Version ${packagejson.version}`)}`);
+    console.log(``);
+    console.log(`${chalk.bold('Usage:')}    ${chalk.magenta('yyc [options] [path/to/project.yyp = current directory] [output file]')}`);
+    console.log(``);
+    console.log(`${chalk.bold('Options:')}`);
+    console.log(`  -z, --zip                        Create a ZIP Archive`);
+    console.log(`  -i, --installer                  Create a Windows Installer`);
+    console.log(`  -y  --yyc                        Use YYC over VM (SLOWER)`);
+    console.log(`  -l  --linux                      Set platform = linux`);
+    console.log(`  -p  --platform [platform]        Set the platform to something else`);
+    console.log(`  -c  --config [config]            Set the configuration`);
+    console.log(`  -C  --clear                      Clear cache and exit`);
+    console.log(``);
+    console.log(`${chalk.bold('Advanced Options:')}`);
+    console.log(`      --clear-remote               Clear remote cache and exit`);
+    console.log(`      --runtime [runtime]          Use a different runtime`);
+    console.log(`  -v  --verbose                    Enable Verbose Mode`);
+    console.log(`      --device-config-dir [path]   Path to an alternate devices.json`);
+    console.log(`      --target-device-name [name]  Device name to use, default if blank`);
+    process.exit();
+}
+
 // Prepare CLI Options.
 const options = cli.parse({
-    zip: ["Z", "Creates a zip archive"],
-    installer: ["I", "Creates a installer package"],
-    yyc: ["y", "Compiles with YYC"],
-    config: ["c", "Sets the configuration", "string"],
-    version: ["v", "Display the current version"],
-    clear: ["", "Clears cache for project and exits."],
-    "clear_remote": ["","Clears the remote client cache."],
-    "gms-dir":["","Alternative GMS installation directory","path"],
-    "platform":["p","Export platform","string"],
-    "device-config-dir":["","Target device config file directory", "path"],
-    "target-device-name":["","Target device name","string"],
-    "runtime":["","The runtime to use","string"],
-    "ea":["","Toggle whether to use Early Access version"],
-    "linux":["l","Equal to --platform linux"],
+    "zip": ["z", ""],
+    "installer": ["i", ""],
+    "yyc": ["y", ""],
+    "config": ["c", "", "string"],
+    "verbose": ["v", ""],
+    "clear": ["C", ""],
+    "clear-remote": ["",""],
+    "platform":["p","","string"],
+    "device-config-dir":["","", "path"],
+    "target-device-name":["","","string"],
+    "runtime":["","","string"],
+    "linux":["l",""],
 });
+
 // CLI calls the callback with the arguments and options.
 cli.main(async (args, options) => {
-    if (options.version) {
-        // Output version and if build tools are all set.
-        const packagejson = JSON.parse(readFileSync(join(__dirname, "../package.json")).toString());
-        console.log(`YoYoProject Compiler ` + chalk.green(`v${packagejson.version}`));
-        return;
-    }
     if (args.length == 0) {
         args[0] = '.';
     }
@@ -75,7 +93,6 @@ cli.main(async (args, options) => {
     }
 
     // Preform some checks to the project.
-    
     if (!validateYYP(path)) {
         cli.fatal("Project invalid, or in a newer format. Exiting");
     }
@@ -121,13 +138,13 @@ cli.main(async (args, options) => {
     }
 
     //
-    let rubberOptions = {
+    let rubberOptions: IRubberOptions = {
         projectPath: path,
         build: buildType,
         outputPath: args[1] || "",
         yyc: options.yyc,
         config: options.config || "default",
-        verbose: options.debug,
+        verbose: options.verbose,
         gamemakerLocation,
         platform,
         deviceConfigFileLocation,
@@ -144,5 +161,5 @@ cli.main(async (args, options) => {
         return;
     }
 
-    options["clear_remote"] ? clearCacheRemote(rubberOptions) : compile(rubberOptions,false);
+    options["clear-remote"] ? clearCacheRemote(rubberOptions) : compile(rubberOptions,false);
 });

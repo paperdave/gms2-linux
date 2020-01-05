@@ -23,9 +23,13 @@ let cache: ILocalSettings;
 export async function readLocalSetting(key: string, def: string = ""): Promise<string> {
     if (!cache) {
         // The UM file contains the user's id number.
-        const userFolder = await getUserDir();
-        const preferencesLocation = join(userFolder, '/local_settings.json');
-        cache = JSON.parse((await fse.readFile(preferencesLocation)).toString());
+        try {
+            const userFolder = await getUserDir();
+            const preferencesLocation = join(userFolder, '/local_settings.json');
+            cache = JSON.parse((await fse.readFile(preferencesLocation)).toString());
+        } catch (error) {
+            cache = {};
+        }
     }
     return cache[key] || def;
 }
