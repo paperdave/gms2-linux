@@ -30,7 +30,7 @@ asuser setsid -f x-terminal-emulator -e 'nc -lkU /tmp/setupstudiosocket' &
 
 sleep 0.5;
 
-printf 'Hello, this terminal window is from setupstudio2, and will tell you what you\nneed to do at any point in the process. For more detailed logs and exact progress look at the original terminal.\n\n' | nc -Uw0 /tmp/setupstudiosocket
+printf 'Hello, this terminal window is from setupstudio2, and will tell you what you\nneed to do at any point in the process. For more detailed logs and exact\nprogress look at the original terminal.\n\n' | nc -Uw0 /tmp/setupstudiosocket
 
 log '[1]' 'Install all dependencies.'
 printf '\nThis stage requires no user input, just chill while stuff is installed.\n\n' | nc -Uw0 /tmp/setupstudiosocket
@@ -110,15 +110,21 @@ mkdir -p /home/$user/.local/share/applications
 generateDesktop > /home/$user/.local/share/applications/gamemakerstudio2.desktop
 chown $user /home/$user/.local/share/applications/gamemakerstudio2.desktop
 
-log '[3.4]' 'Create a Symbolic Link for GameMaker'"'"'s Config'
+log '[3.4]' 'Create an commandline startup in /usr/bin'
+generateBin() {
+  printf '#!/bin/bash\nWINEPREFIX="'"$PREFIX"'" WINEARCH="win64" wine64 "C:\Program Files\GameMaker Studio 2\GameMakerStudio.exe"';
+}
+generateBin > /usr/bin/gms2
+
+log '[3.5]' 'Create a Symbolic Link for GameMaker'"'"'s Config'
 ln -s "$PREFIX/drive_c/users/$user/Application Data/GameMakerStudio2" "$PREFIX/config"
 # also a bit of cleanup
 rm ~/.gamemaker/drive_c/users/dave/Temp/* -rf
 
 log '[4]' 'Set up the SSH Server'
-if service --status-all | grep -Fq 'ssh'; then
-  printf 'SSH Server is already setup. No extra work here.\n'
-  printf '\n    *an ssh server was detected, this step will be skipped\n' | nc -Uw0 /tmp/setupstudiosocket
+if systemctl list-units --full -all | grep -Fq 'ssh.service'; then
+  printf 'SSH Server is already setup. No extra work here.'
+  printf '*an ssh server was detected, this step will be skipped\n' | nc -Uw0 /tmp/setupstudiosocket
 else
   printf 'SSH Server is not setup.'
   printf '\nTo be able to compile native linux builds, an SSH sever will be installed,\ntricking GameMaker into thinking it is compiling remotely.\n\nNOTICE: A security measure of this auto-installer is that the ssh server will\nonly be accessable from your computer, you can change this by\nediting /etc/ssh/sshd_config.\n' | nc -Uw0 /tmp/setupstudiosocket
@@ -126,6 +132,7 @@ else
   apt install openssh-server
   log '[4.2]' 'Disable Remote Connections'
   cat /etc/ssh/sshd_config | sed -e 's/#ListenAddress ::/#ListenAddress ::\n# The following line was added by setupstudio2\nListenAddress 127.0.0.1/' > /etc/ssh/sshd_config
+  service ssh restart
 fi
 
 log '[5]' 'Install the linux variant of gamemaker-rubber'
