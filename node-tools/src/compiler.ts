@@ -153,17 +153,17 @@ export function compile(options: IRubberOptions, clearRemoteCache: boolean = fal
     // Fill in some defaults
     if (typeof options.gamemakerDataLocation === 'undefined') {
       if (options.ea) {
-        options.gamemakerDataLocation = join(C_DRIVE, 'ProgramData', 'GameMakerStudio2-EA')
+        options.gamemakerDataLocation = join(C_DRIVE, 'ProgramData', 'GameMakerStudio2-EA');
       } else {
-        options.gamemakerDataLocation = join(C_DRIVE, 'ProgramData', 'GameMakerStudio2')
+        options.gamemakerDataLocation = join(C_DRIVE, 'ProgramData', 'GameMakerStudio2');
       }
     }
 
     if (typeof options.gamemakerLocation === 'undefined' || options.gamemakerLocation === '') {
       if (options.ea) {
-        options.gamemakerLocation = join(C_DRIVE, 'Program Files', 'GameMaker Studio 2-EA')
+        options.gamemakerLocation = join(C_DRIVE, 'Program Files', 'GameMaker Studio 2-EA');
       } else {
-        options.gamemakerLocation = join(C_DRIVE, 'Program Files', 'GameMaker Studio 2')
+        options.gamemakerLocation = join(C_DRIVE, 'Program Files', 'GameMaker Studio 2');
       }
     } else {
       if (!(await fse.pathExists(options.gamemakerLocation))) {
@@ -174,7 +174,8 @@ export function compile(options: IRubberOptions, clearRemoteCache: boolean = fal
     let deviceConfig;
     let targetOptionValues;
     let iosHostMacValues;
-    options.deviceConfigFileLocation = options.deviceConfigFileLocation || join(await getUserDir(), 'devices.json');
+    options.deviceConfigFileLocation =
+      options.deviceConfigFileLocation || join(await getUserDir(), 'devices.json');
     if (
       typeof options.deviceConfigFileLocation === 'undefined' ||
       options.deviceConfigFileLocation === ''
@@ -235,16 +236,19 @@ export function compile(options: IRubberOptions, clearRemoteCache: boolean = fal
       ))
     ) {
       throw new Error(
-        'Missing options_main.inherited.yy. This can be because of a partial project, or the usage of a differen parent project structure.'
+        'Missing options_main.inherited.yy. This can be because of a partial project, or the usage of a different parent project structure.'
       );
     }
-    const guid_match = (
+    let guid_match = (
       await fse.readFile(
         join(projectDir, 'options', 'main', 'inherited', 'options_main.inherited.yy')
       )
     )
       .toString()
       .match('"option_gameguid": "(.*?)"');
+    if (!guid_match) {
+      guid_match = [null, (await fse.readJson(options.projectPath)).id];
+    }
     if (!guid_match) {
       throw new Error(
         'options_main.inherited.yy is missing project GUID, cannot identify project.'
@@ -495,8 +499,14 @@ export function compile(options: IRubberOptions, clearRemoteCache: boolean = fal
       clearRemoteCache ? 'Clean' : exportType,
     ];
     const args = [
-        '-c',
-        `${options.verbose ? '' : 'WINEDEBUG=-all '}WINEPREFIX=${WINE_PREFIX} WINEARCH="win64" wine64 "${join(runtimeLocation, 'bin', 'Igor.exe').replace(/\\/g, '/')}" ${igorArgs.join(' ')}`
+      '-c',
+      `${
+        options.verbose ? '' : 'WINEDEBUG=-all '
+      }WINEPREFIX=${WINE_PREFIX} WINEARCH="win64" wine64 "${join(
+        runtimeLocation,
+        'bin',
+        'Igor.exe'
+      ).replace(/\\/g, '/')}" ${igorArgs.join(' ')}`,
     ];
     spawn('sh', args, { stdio: 'inherit' });
   };
